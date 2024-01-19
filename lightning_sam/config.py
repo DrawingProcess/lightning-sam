@@ -5,7 +5,7 @@ config = {
     "batch_size": 4,
     "num_workers": 4,
     "num_epochs": 200,
-    "eval_interval": 2,
+    "eval_interval": 5,
     "out_dir": "out/training",
     "opt": {
         "learning_rate": 8e-4,

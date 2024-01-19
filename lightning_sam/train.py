@@ -17,8 +17,65 @@ from torch.utils.data import DataLoader
 from utils import AverageMeter
 from utils import calc_iou
 
+import argparse
+from config import cfg
+import json
+
 torch.set_float32_matmul_precision('high')
 
+parser = argparse.ArgumentParser(
+    description='Yolact Training Script')
+parser.add_argument('--batch_size', default=2, type=int,
+                    help='Batch size for training')
+parser.add_argument('--resume', default=None, type=str,
+                    help='Checkpoint state_dict file to resume training from. If this is "interrupt"'', the model will resume training from the interrupt file.')
+parser.add_argument('--num_workers', default=4, type=int,
+                    help='Number of workers used in dataloading')
+parser.add_argument('--num_epochs', default=200, type=int,
+                    help='Number of workers used in dataloading')
+parser.add_argument('--out_dir', default='out/training/',
+                    help='Directory for saving checkpoint models.')
+parser.add_argument('--eval_interval', default=5,
+                    help='model weight save interval(evaluation interval)')
+parser.add_argument('--dataset', default=None, type=str,
+                    help='If specified, override the dataset specified in the config with this one (example: coco2017_dataset).')
+args = parser.parse_args()
+
+if args.batch_size // torch.cuda.device_count() < 6:
+    if __name__ == '__main__':
+        print('Per-GPU batch size is less than the recommended limit for batch norm. Disabling batch norm.')
+    cfg.freeze_bn = True
+
+if args.batch_size is not None:
+    cfg.batch_size = args.batch_size
+
+if args.resume is not None:
+    cfg.model["checkpoint"] = args.resume
+    
+    filename = args.resume
+    filename_split = filename.split('-')
+    epoch_init = int(filename_split[1]) + 1
+else:
+    epoch_init = 1
+
+if args.num_workers is not None:
+    cfg.num_workers = args.num_workers
+
+if args.num_epochs is not None:
+    cfg.num_epochs = args.num_epochs
+
+if args.eval_interval is not None:
+    cfg.eval_interval = args.eval_interval
+
+if args.out_dir is not None:
+    cfg.out_dir = args.out_dir
+
+if args.dataset is not None:
+    config_dataset = cfg.dataset
+    config_dataset["train"]["rootdir"] = args.dataset
+    config_dataset["train"]["annotation_file"] = args.dataset + ".json"
+    config_dataset["val"]["rootdir"] = args.dataset
+    config_dataset["val"]["annotation_file"] = args.dataset + ".json"
 
 def validate(fabric: L.Fabric, model: Model, val_dataloader: DataLoader, epoch: int = 0):
     model.eval()
@@ -68,7 +125,7 @@ def train_sam(
     focal_loss = FocalLoss()
     dice_loss = DiceLoss()
 
-    for epoch in range(1, cfg.num_epochs):
+    for epoch in range(epoch_init, cfg.num_epochs):
         batch_time = AverageMeter()
         data_time = AverageMeter()
         focal_losses = AverageMeter()
@@ -161,7 +218,6 @@ def main(cfg: Box) -> None:
 
     train_sam(cfg, fabric, model, optimizer, scheduler, train_data, val_data)
     validate(fabric, model, val_data, epoch=0)
-
 
 if __name__ == "__main__":
     main(cfg)
