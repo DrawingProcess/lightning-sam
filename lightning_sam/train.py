@@ -19,7 +19,6 @@ from utils import calc_iou
 
 import argparse
 from config import cfg
-import json
 
 torch.set_float32_matmul_precision('high')
 
@@ -31,7 +30,7 @@ parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from. If this is "interrupt"'', the model will resume training from the interrupt file.')
 parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers used in dataloading')
-parser.add_argument('--num_epochs', default=200, type=int,
+parser.add_argument('--num_epochs', default=30, type=int,
                     help='Number of workers used in dataloading')
 parser.add_argument('--out_dir', default='out/training/',
                     help='Directory for saving checkpoint models.')
@@ -174,6 +173,13 @@ def train_sam(
                          f' | Dice Loss [{dice_losses.val:.4f} ({dice_losses.avg:.4f})]'
                          f' | IoU Loss [{iou_losses.val:.4f} ({iou_losses.avg:.4f})]'
                          f' | Total Loss [{total_losses.val:.4f} ({total_losses.avg:.4f})]')
+        state = {"epoch": epoch, "batch_time_val": batch_time.val, "batch_time_avg": batch_time.avg, \
+                 "focal_loss_val": focal_losses.val, "focal_loss_avg": focal_losses.avg, \
+                 "dice_loss_val": dice_losses.val, "dice_loss_avg": dice_losses.avg, \
+                 "iou_loss_val": iou_losses.val, "iou_loss_avg": iou_losses.avg, \
+                 "total_loss_val": total_losses.val, "total_loss_avg": total_losses.avg
+                 }
+        fabric.save(os.path.join(cfg.out_dir, f"epoch-{epoch:06d}.ckpt"), state)
 
 
 def configure_opt(cfg: Box, model: Model):
@@ -198,7 +204,7 @@ def main(cfg: Box) -> None:
     fabric = L.Fabric(accelerator="auto",
                       devices=cfg.num_devices,
                       strategy="auto",
-                      loggers=[TensorBoardLogger(cfg.out_dir, name="lightning-sam")])
+                      loggers=[TensorBoardLogger(root_dir=cfg.out_dir, name="lightning-sam")])
     fabric.launch()
     fabric.seed_everything(1337 + fabric.global_rank)
 

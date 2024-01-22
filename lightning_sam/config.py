@@ -16,7 +16,7 @@ config = {
     },
     "model": {
         "type": 'vit_h',
-        "checkpoint": "/home/avs/segment-anything/checkpoint/sam_vit_h_4b8939.pth",
+        "checkpoint": "/home/avs/lightning-sam/checkpoint/sam_vit_h_4b8939.pth",
         "freeze": {
             "image_encoder": True,
             "prompt_encoder": True,
