@@ -52,9 +52,10 @@ pip install .
 
 1. Prepare your custom COCO-format dataset. The dataset should include a JSON file with annotations and an images folder with corresponding images.
 
-1. Edit src/config.py with your dataset paths.
+2. Edit src/config.py with your dataset paths.
 
-1. Run src/train.py.
+3. Run src/train.py.
+- python lightning_sam/train.py --dataset /home/avs/dataset/train_exd/merged_scenario/merged_scenario --out_dir out/training_merged_scenario
 
 ## Notes
 

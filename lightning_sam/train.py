@@ -18,12 +18,11 @@ from utils import AverageMeter
 from utils import calc_iou
 
 import argparse
-from config import cfg
 
 torch.set_float32_matmul_precision('high')
 
 parser = argparse.ArgumentParser(
-    description='Yolact Training Script')
+    description='Lightning SAM Training Script')
 parser.add_argument('--batch_size', default=2, type=int,
                     help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str,
